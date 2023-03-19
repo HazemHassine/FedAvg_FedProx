@@ -1,6 +1,22 @@
 from torch.utils.data import Dataset
 import numpy as np
 
+
+import torch
+
+def FSGM(model, inp, label, iters=5, eta=0.1):
+    inp.requires_grad = True
+    criterion = torch.nn.CrossEntropyLoss()
+    minv, maxv = float(inp.min().detach().cpu().numpy()), float(inp.max().detach().cpu().numpy())
+    # print(inp.shape)
+    # print(label.shape)
+    print(eta)
+    for _ in range(iters):
+        loss = criterion(model.forward(inp), label.flatten().long()).mean()
+        dp = torch.sign(torch.autograd.grad(loss, inp)[0])
+        inp.data.add_(eta*dp.detach()).clamp(minv, maxv)
+    return inp
+
 def non_iid_partition(dataset, num_clients):
     """
     non I.I.D parititioning of data over clients
